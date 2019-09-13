@@ -1,30 +1,17 @@
 /*
  * Create a list that holds all of your cards
  */
+ const allCards = document.querySelectorAll('.card');
+ const deck = document.querySelector('.deck');
+ const openCardLimit = 2;
 
 
-/*
- * Display the cards on the page
- *   - shuffle the list of cards using the provided "shuffle" method below
- *   - loop through each card and create its HTML
- *   - add each card's HTML to the page
- */
 
-// Shuffle function from http://stackoverflow.com/a/2450976
-function shuffle(array) {
-    var currentIndex = array.length, temporaryValue, randomIndex;
 
-    while (currentIndex !== 0) {
-        randomIndex = Math.floor(Math.random() * currentIndex);
-        currentIndex -= 1;
-        temporaryValue = array[currentIndex];
-        array[currentIndex] = array[randomIndex];
-        array[randomIndex] = temporaryValue;
-    }
 
-    return array;
-}
-
+///////////////////////////////////
+// Listeners
+///////////////////////////////////
 
 /*
  * set up the event listener for a card. If a card is clicked:
@@ -36,3 +23,219 @@ function shuffle(array) {
  *    + increment the move counter and display it on the page (put this functionality in another function that you call from this one)
  *    + if all cards have matched, display a message with the final score (put this functionality in another function that you call from this one)
  */
+ deck.addEventListener('click', clickResponseAction);
+
+ // TODO: Check for page load before resetting game?
+  resetGame();
+
+
+ ///////////////////////////////////
+ // Actions
+ ///////////////////////////////////
+
+ /*
+  * Click Response Action
+  *    - An event listener function to trigger all other actions
+  *
+  * Verifies that a card is the event target then checks if the card is already open.
+  * If the card is not already open 'showCardAction' is called.
+  * Else the 'hideCardAction' function is called
+  */
+function clickResponseAction() {
+  if(event.target.classList.contains("card")){
+    showCardAction(event.target);
+
+    if(openCards.isFull()) {
+      // TODO: increment the move counter
+      if(isMatchPair()) {   displayCardMatchAction();   }
+      else {    hideCardAction();   }
+    }
+  }
+
+}
+
+
+/*
+ * Show Card Action
+ *      - Displays the card symbol and changes the card colorif the card is
+ *        NOT opened or matched
+ *
+ * Takes in a card element as a parameter and checks class list of
+ * the given element for 'open' and 'match' classes. If neither class is present:
+ *    - the card element is pushed onto the openCards array unless the array is full.
+ *    - the 'open' and 'show' classes are added to the elements class list unless
+ *      openCards array is full
+ */
+function showCardAction(cardElement) {
+  if(!cardElement.classList.contains("open") &&
+     !cardElement.classList.contains("match")) {
+
+        if(openCards.pushToLimit(cardElement)) {
+          console.log('Open cards: ',openCards.length);
+          cardElement.classList.add("open","show");
+        }
+  }
+}
+
+/*
+ * Hide Card Action
+ *      - Hides the card symbol and changes the card color
+ *
+ * Calls the resetOpenCards funtion after 1 second to hide the cards.
+ */
+function hideCardAction() {
+    setTimeout(resetOpenCards, 1000);
+
+}
+
+
+/*
+ * Display Card Match Action
+ *      - This action changes the card color to indicate a match.
+ *
+ * The function loops through openCards, removes 'open' and 'show' classes'
+ * and adds 'match' class to each card element in openCards array.
+ */
+function displayCardMatchAction() {
+  console.log("fire displayCardMatchAction")
+  openCards.forEach(function(card) {
+    card.classList.remove('open','show');
+    card.classList.add('match');
+  });
+
+  // TODO: Add animation
+  openCards = [];
+}
+
+
+///////////////////////////////////
+// Deck Functionality
+///////////////////////////////////
+
+/*
+ * Display the cards on the page
+ *   - shuffle the list of cards using the provided "shuffle" method below
+ *   - loop through each card and create its HTML
+ *   - add each card's HTML to the page
+ */
+ function shuffleDeck() {
+   let cardSymbols = deck.querySelectorAll('i');
+   cardSymbols = shuffle(cardSymbols);
+   console.log(cardSymbols);
+
+ }
+
+///////////////////////////////////
+// Active Card Functionality
+///////////////////////////////////
+
+/*
+ * The 'isMatchPair' method returns TRUE when two cards have the
+ * same symbol - a match!
+ */
+function isMatchPair() {
+  const firstCardSymbol = openCards[0].firstElementChild.className;
+  const secondCardSymbol = openCards[1].firstElementChild.className;
+  console.log(firstCardSymbol,"?", secondCardSymbol);
+  return firstCardSymbol === secondCardSymbol;
+
+}
+
+/*
+ * Resets the open cards by restoring their original 'hidden' state
+ * Reassigns openCards to empty array.
+ */
+function resetOpenCards() {
+  openCards.forEach(function(card) {
+    card.className = "card";
+  });
+
+  openCards = [];
+}
+
+
+
+
+///////////////////////////////////
+// Scoring Functionality
+///////////////////////////////////
+function updateMoveCounter(){
+  // TODO:
+}
+
+
+function resetGame(cards){
+  //TODO: Reset Timer
+
+  //TODO: Reset Move counter
+
+  //Reset Deck
+  allCards.forEach(function(card) {
+    card.className = "card";
+  });
+
+  shuffleDeck();
+
+  openCards = [];
+}
+
+
+
+
+ ///////////////////////////////////
+ //
+ ///////////////////////////////////
+
+ /*
+ * Add method "pushToLimit" to built-in Array Object to enforce size constraint
+ * This method will push objects onto the array and return TRUE
+ * until the predefined limit of 2 is reach. At which point the method will NOT
+ * add the object to the array and will return FALSE.
+ *
+ * NOTE: While modifying native objects is generally bad practice due to possible
+ * future naming collisions and maintainability particularly in a multi-developer
+ * environment(Maintainable Javascript by Nicholas C. Zakas O'Reilly), the risk
+ * in this instance, is minor since is it a small project maintained by a
+ * single developer.
+ */
+ Object.defineProperties(Array.prototype, {
+   pushToLimit: {
+       value: function (value) {
+         if (this.length >= 2) {
+           return false;
+         }
+         return this.push(value);
+       }
+     },
+
+   isFull: {
+     value: function(){
+       return this.length == 2;
+   }
+ }
+ });
+
+
+
+ /*
+  * Display the cards on the page
+  *   - shuffle the list of cards using the provided "shuffle" method below
+  *   - loop through each card and create its HTML
+  *   - add each card's HTML to the page
+  */
+
+  // Shuffle function from http://stackoverflow.com/a/2450976. Modified to traverse
+  //nodelist instead of array. Is less costly though tightly coupled now.
+  function shuffle(nodeList) {
+      var currentIndex = nodeList.length, temporaryValue, randomIndex;// TODO: change to let
+
+      while (currentIndex !== 0) {
+          randomIndex = Math.floor(Math.random() * currentIndex);
+          currentIndex -= 1;
+          temporaryValue = nodeList.item(currentIndex).className;
+          nodeList.item(currentIndex).className = nodeList.item(randomIndex).className;
+          nodeList.item(randomIndex).className = temporaryValue;
+      }
+
+      return nodeList;
+  }
