@@ -3,7 +3,11 @@
  */
  const allCards = document.querySelectorAll('.card');
  const deck = document.querySelector('.deck');
+ const moveTracker = document.querySelector('.moves');
  const openCardLimit = 2;
+ const totalCards = 16;
+ let totalMatchedCards = 0;
+ let moveCounter = 0;
 
 
 
@@ -46,9 +50,13 @@ function clickResponseAction() {
     showCardAction(event.target);
 
     if(openCards.isFull()) {
-      // TODO: increment the move counter
-      if(isMatchPair()) {   displayCardMatchAction();   }
-      else {    hideCardAction();   }
+      updateMoveCounter();
+      if(isMatchPair()) {
+        displayCardMatchAction();
+        if(totalMatchedCards == totalCards)
+         displayWinnerScore();
+      }
+      else {   hideCardAction();   }
     }
   }
 
@@ -103,6 +111,8 @@ function displayCardMatchAction() {
     card.classList.add('match');
   });
 
+  totalMatchedCards += openCards.length;
+  console.log("totalMatchedCards = ",totalMatchedCards);
   // TODO: Add animation
   openCards = [];
 }
@@ -124,6 +134,8 @@ function displayCardMatchAction() {
    console.log(cardSymbols);
 
  }
+
+
 
 ///////////////////////////////////
 // Active Card Functionality
@@ -159,15 +171,23 @@ function resetOpenCards() {
 ///////////////////////////////////
 // Scoring Functionality
 ///////////////////////////////////
+
+/*
+ * The 'updateMoveCounter' function increments the moveCounter and updates
+ * the text content of the moves element with the new value.
+ */
 function updateMoveCounter(){
-  // TODO:
+    moveCounter++;
+    moveTracker.textContent = moveCounter;
 }
 
 
 function resetGame(cards){
   //TODO: Reset Timer
 
-  //TODO: Reset Move counter
+  //Reset Move counter
+    moveCounter = 0;
+    moveTracker.textContent = moveCounter;
 
   //Reset Deck
   allCards.forEach(function(card) {
@@ -179,7 +199,13 @@ function resetGame(cards){
   openCards = [];
 }
 
+function displayWinnerScore() {
+  // TODO: Show modal with congratulatory message, stats,
+  //       and play again option
+  console.log("Congratulations! You are a winner!");
+  console.log("You won in ", moveCounter, " moves");
 
+}
 
 
  ///////////////////////////////////
