@@ -1,3 +1,6 @@
+// TODO: Check for page load???
+//document.addEventListener('DOMContentLoaded', function () {
+let testMode = false;
 /*
  * Create a list that holds all of your cards
  */
@@ -6,8 +9,10 @@
  const moveTracker = document.querySelector('.moves');
  const openCardLimit = 2;
  const totalCards = 16;
+
  let totalMatchedCards = 0;
  let moveCounter = 0;
+ let timer = new Timer();
 
 
 
@@ -29,8 +34,11 @@
  */
  deck.addEventListener('click', clickResponseAction);
 
- // TODO: Check for page load before resetting game?
-  resetGame();
+
+ resetGame();
+
+
+
 
 
  ///////////////////////////////////
@@ -47,14 +55,17 @@
   */
 function clickResponseAction() {
   if(event.target.classList.contains("card")){
+    timer.start();
     showCardAction(event.target);
 
     if(openCards.isFull()) {
       updateMoveCounter();
       if(isMatchPair()) {
         displayCardMatchAction();
-        if(totalMatchedCards == totalCards)
-         displayWinnerScore();
+        if(totalMatchedCards == totalCards){
+          timer.stop();
+          displayWinnerScore();
+       }
       }
       else {   hideCardAction();   }
     }
@@ -79,7 +90,7 @@ function showCardAction(cardElement) {
      !cardElement.classList.contains("match")) {
 
         if(openCards.pushToLimit(cardElement)) {
-          console.log('Open cards: ',openCards.length);
+          log('Open cards: '+openCards.length);
           cardElement.classList.add("open","show");
         }
   }
@@ -105,14 +116,13 @@ function hideCardAction() {
  * and adds 'match' class to each card element in openCards array.
  */
 function displayCardMatchAction() {
-  console.log("fire displayCardMatchAction")
   openCards.forEach(function(card) {
     card.classList.remove('open','show');
     card.classList.add('match');
   });
 
   totalMatchedCards += openCards.length;
-  console.log("totalMatchedCards = ",totalMatchedCards);
+  log("totalMatchedCards = "+totalMatchedCards);
   // TODO: Add animation
   openCards = [];
 }
@@ -131,7 +141,7 @@ function displayCardMatchAction() {
  function shuffleDeck() {
    let cardSymbols = deck.querySelectorAll('i');
    cardSymbols = shuffle(cardSymbols);
-   console.log(cardSymbols);
+   log(cardSymbols);
 
  }
 
@@ -148,7 +158,7 @@ function displayCardMatchAction() {
 function isMatchPair() {
   const firstCardSymbol = openCards[0].firstElementChild.className;
   const secondCardSymbol = openCards[1].firstElementChild.className;
-  console.log(firstCardSymbol,"?", secondCardSymbol);
+  log(firstCardSymbol+"?"+secondCardSymbol);
   return firstCardSymbol === secondCardSymbol;
 
 }
@@ -184,6 +194,7 @@ function updateMoveCounter(){
 
 function resetGame(cards){
   //TODO: Reset Timer
+  timer.reset();
 
   //Reset Move counter
     moveCounter = 0;
@@ -208,8 +219,73 @@ function displayWinnerScore() {
 }
 
 
+///////////////////////////////////
+// Timer
+///////////////////////////////////
+
+function Timer() {
+  //this.timeDisplay = 0;
+  let intervalId = 0;
+  let hours = minutes= seconds = 0;
+  let totalSecs = totalMins = 60;
+
+
+  let padTime = function(i) {
+    //log(i);
+    return ('00'+i).substr(-2);
+  };
+
+  let displayTime = function(h,m,s) {
+    h = padTime(h);
+    m = padTime(m);
+    s = padTime(s);
+    document.getElementById('time').innerHTML =  h + ":" + m + ":" + s;
+    log("after pad: "+h+ ":"+ m+ ":"+ s);
+  };
+
+  let update = function() {
+    let s = seconds;
+    let m = minutes;
+    let h = hours;
+
+    if(seconds == totalSecs-1) {
+      seconds = 0;
+      minutes++;
+    }
+    else{  seconds++;   }
+
+    if(minutes == totalMins-1){
+      minutes=0;
+      hours++;
+    }
+
+    displayTime(hours,minutes,seconds);
+
+  };
+
+
+  this.start = function() {
+    if(!intervalId){
+      intervalId = setInterval(update, 1000);
+    }
+  };
+
+  this.stop = function() {
+    clearInterval(intervalId);
+    intervalId = 0;
+  };
+
+  this.reset = function() {
+    clearInterval(intervalId);
+    intervalId = 0;
+    hours = minutes= seconds = 0;
+    displayTime(hours,minutes,seconds);
+  };
+
+}
+
  ///////////////////////////////////
- //
+ // Helpers
  ///////////////////////////////////
 
  /*
@@ -265,3 +341,10 @@ function displayWinnerScore() {
 
       return nodeList;
   }
+
+
+function log(message){
+  if(testMode)
+    console.debug(message);
+}
+//});
