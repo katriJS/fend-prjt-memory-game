@@ -232,7 +232,7 @@ function displayWinnerScore() {
 ///////////////////////////////////
 // Timer Functionality
 ///////////////////////////////////
-
+// TODO: Consider reset game after 5 min lapse/count-down timer instead
 function Timer() {
   //this.timeDisplay = 0;
   let intervalId = 0;
@@ -254,9 +254,6 @@ function Timer() {
   };
 
   let update = function() {
-    let s = seconds;
-    let m = minutes;
-    let h = hours;
 
     if(seconds == totalSecs-1) {
       seconds = 0;
@@ -307,10 +304,10 @@ function StarRatings() {
 
 
   let update = function() {
-
+    //Do if totalStars != 0
     if(totalStars) {
       log("thres: ",timeThreshold," | time: ",timeInSeconds);
-      //debug: Logic - First condition is never met
+      //TODO: Fix Logic - First condition is never met
       if(moveCounter > movesThreshold || timeInSeconds > timeThreshold) {
         let star = starsArray[starsArray.length-1];
 
