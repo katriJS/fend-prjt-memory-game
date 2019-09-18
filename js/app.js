@@ -7,16 +7,22 @@ let testMode = false;
  const allCards = document.querySelectorAll('.card');
  const deck = document.querySelector('.deck');
  const moveTracker = document.querySelector('.moves');
+ const reloader = document.querySelector('.restart');
+ const stars = this.stars = document.querySelectorAll('.fa-star');
  const openCardLimit = 2;
  const totalCards = 16;
 
  let totalMatchedCards = 0;
  let moveCounter = 0;
+ let timeInSeconds = 0;
  let timer = new Timer();
+ let scorer = new StarRatings();
+ let totalStars = 3;
 
 
 
 
+ resetGame();
 
 ///////////////////////////////////
 // Listeners
@@ -33,10 +39,7 @@ let testMode = false;
  *    + if all cards have matched, display a message with the final score (put this functionality in another function that you call from this one)
  */
  deck.addEventListener('click', clickResponseAction);
-
-
- resetGame();
-
+ reloader.addEventListener('click', resetGame);
 
 
 
@@ -54,19 +57,21 @@ let testMode = false;
   * Else the 'hideCardAction' function is called
   */
 function clickResponseAction() {
-  if(event.target.classList.contains("card")){
+  if(event.target.classList.contains("card")) {
     timer.start();
+    scorer.start();
     showCardAction(event.target);
 
     if(openCards.isFull()) {
       updateMoveCounter();
       if(isMatchPair()) {
         displayCardMatchAction();
-        if(totalMatchedCards == totalCards){
+        if(totalMatchedCards == totalCards) {
           timer.stop();
+          scorer.stop();
           displayWinnerScore();
        }
-      }
+     }//debug: can still turn over a 3rd card during time interval
       else {   hideCardAction();   }
     }
   }
@@ -89,10 +94,10 @@ function showCardAction(cardElement) {
   if(!cardElement.classList.contains("open") &&
      !cardElement.classList.contains("match")) {
 
-        if(openCards.pushToLimit(cardElement)) {
-          log('Open cards: '+openCards.length);
-          cardElement.classList.add("open","show");
-        }
+    if(openCards.pushToLimit(cardElement)) {
+      log('Open cards: '+openCards.length);
+      cardElement.classList.add("open","show");
+    }
   }
 }
 
@@ -103,6 +108,7 @@ function showCardAction(cardElement) {
  * Calls the resetOpenCards funtion after 1 second to hide the cards.
  */
 function hideCardAction() {
+    console.log("hideCardAction: num cards = ",openCards.length);
     setTimeout(resetOpenCards, 1000);
 
 }
@@ -148,7 +154,9 @@ function displayCardMatchAction() {
 
 
 ///////////////////////////////////
-// Active Card Functionality
+// Active Card(s) Functionality
+//
+// TODO: Encapsulate in CardHolder Object
 ///////////////////////////////////
 
 /*
@@ -193,8 +201,10 @@ function updateMoveCounter(){
 
 
 function resetGame(cards){
-  //TODO: Reset Timer
+  //Reset Timer and Star Ratings
   timer.reset();
+  scorer.reset();
+
 
   //Reset Move counter
     moveCounter = 0;
@@ -206,21 +216,21 @@ function resetGame(cards){
   });
 
   shuffleDeck();
-
+  totalMatchedCards = 0;
   openCards = [];
 }
 
 function displayWinnerScore() {
   // TODO: Show modal with congratulatory message, stats,
   //       and play again option
-  console.log("Congratulations! You are a winner!");
-  console.log("You won in ", moveCounter, " moves");
+  console.log("Congratulations! You won!");
+  console.log("with ", moveCounter, " Moves and ", totalStars, " Stars!");
 
 }
 
 
 ///////////////////////////////////
-// Timer
+// Timer Functionality
 ///////////////////////////////////
 
 function Timer() {
@@ -252,35 +262,116 @@ function Timer() {
       seconds = 0;
       minutes++;
     }
-    else{  seconds++;   }
+    else{  seconds++;  }
 
-    if(minutes == totalMins-1){
+    if(minutes == totalMins-1) {
       minutes=0;
       hours++;
     }
 
     displayTime(hours,minutes,seconds);
-
+    timeInSeconds++;
   };
 
 
   this.start = function() {
-    if(!intervalId){
+    if(!intervalId) {
       intervalId = setInterval(update, 1000);
     }
   };
 
   this.stop = function() {
-    clearInterval(intervalId);
-    intervalId = 0;
+    if(intervalId) {
+      clearInterval(intervalId);
+      intervalId = 0;
+    }
   };
 
   this.reset = function() {
-    clearInterval(intervalId);
-    intervalId = 0;
-    hours = minutes= seconds = 0;
+    stop();
+    hours = minutes = seconds = 0;
     displayTime(hours,minutes,seconds);
   };
+
+}
+
+///////////////////////////////////
+// Star Ratings
+///////////////////////////////////
+function StarRatings() {
+
+  let starsArray = Array.from(stars);
+  let intervalId = 0;
+  let timeThreshold = 15;
+  let movesThreshold = 16;
+
+
+  let update = function() {
+
+    if(totalStars) {
+      log("thres: ",timeThreshold," | time: ",timeInSeconds);
+      //debug: Logic - First condition is never met
+      if(moveCounter > movesThreshold || timeInSeconds > timeThreshold) {
+        let star = starsArray[starsArray.length-1];
+
+        if (star.classList.contains('fa-star')) {
+          star.classList.remove('fa-star');
+          star.classList.add('fa-star-half');
+        }
+        else{
+          star.classList.remove('fa-star-half');
+          starsArray.pop();
+        }
+
+        //decrement the total remaining stars counter by .5
+        totalStars = totalStars - .5;
+
+        //set new thresholds
+        timeThreshold += 15;
+        movesThreshold += 4;
+        log("moves threshold: "+movesThreshold+" | time threshold: "+timeThreshold);
+
+      }
+      else {
+        //Stop executing update since there are no stars left
+        stop();
+      }
+
+    }
+  };
+
+
+  this.start = function() {
+    if(!intervalId) {
+      intervalId = setInterval(update, 15000);
+    }
+  };
+
+  this.stop = function() {
+    if(intervalId) {
+      clearInterval(intervalId);
+      intervalId = 0;
+    }
+  };
+
+  this.reset = function() {
+    stop();
+
+    //Display all stars in score panel
+    //let allStars = stars;
+    stars.forEach(function(star) {
+      star.className = 'fa fa-star';
+    });
+
+    //reset counters
+    totalStars = 3;
+    timeInSeconds = 0;
+
+    timeThreshold = 15;
+    movesThreshold = 16;
+    starsArray = Array.from(stars);
+  };
+
 
 }
 
@@ -288,6 +379,8 @@ function Timer() {
  // Helpers
  ///////////////////////////////////
 
+
+//TODO: Encapsulate in CardHolder Object
  /*
  * Add method "pushToLimit" to built-in Array Object to enforce size constraint
  * This method will push objects onto the array and return TRUE
@@ -311,7 +404,7 @@ function Timer() {
      },
 
    isFull: {
-     value: function(){
+     value: function() {
        return this.length == 2;
    }
  }
@@ -343,7 +436,7 @@ function Timer() {
   }
 
 
-function log(message){
+function log(message) {
   if(testMode)
     console.debug(message);
 }
