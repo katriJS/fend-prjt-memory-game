@@ -9,6 +9,7 @@ let testMode = false;
  const moveTracker = document.querySelector('.moves');
  const reloader = document.querySelector('.restart');
  const stars = this.stars = document.querySelectorAll('.fa-star');
+ const modal = document.querySelector('.modal');
  const openCardLimit = 2;
  const totalCards = 16;
 
@@ -40,6 +41,14 @@ let testMode = false;
  */
  deck.addEventListener('click', clickResponseAction);
  reloader.addEventListener('click', resetGame);
+
+ window.onclick = function(event) {
+  if (event.target == modal) {
+    resetGame();
+  }
+}
+
+
 
 
 
@@ -134,6 +143,29 @@ function displayCardMatchAction() {
 }
 
 
+function resetGame(cards){
+  //Reset Timer and Star Ratings
+  timer.reset();
+  scorer.reset();
+
+  //Reset Move counter
+    moveCounter = 0;
+    moveTracker.textContent = moveCounter;
+
+  //Reset Deck
+  allCards.forEach(function(card) {
+    card.className = "card";
+  });
+
+  shuffleDeck();
+  totalMatchedCards = 0;
+  openCards = [];
+
+  //Hide modal
+  modal.style.display = "none";
+
+}
+
 ///////////////////////////////////
 // Deck Functionality
 ///////////////////////////////////
@@ -200,31 +232,60 @@ function updateMoveCounter(){
 }
 
 
-function resetGame(cards){
-  //Reset Timer and Star Ratings
-  timer.reset();
-  scorer.reset();
 
-
-  //Reset Move counter
-    moveCounter = 0;
-    moveTracker.textContent = moveCounter;
-
-  //Reset Deck
-  allCards.forEach(function(card) {
-    card.className = "card";
-  });
-
-  shuffleDeck();
-  totalMatchedCards = 0;
-  openCards = [];
-}
 
 function displayWinnerScore() {
   // TODO: Show modal with congratulatory message, stats,
   //       and play again option
   console.log("Congratulations! You won!");
   console.log("with ", moveCounter, " Moves and ", totalStars, " Stars!");
+  const modalMessage = document.querySelector(".message");
+  const modalBody = document.querySelector('.modal-body');
+
+  let message = "You won with " + moveCounter + " Moves";
+//
+
+  const list = modalBody.getElementsByClassName('stars')[0];
+  let currentStars = list.children;
+  //In case of Reset, remove any previous Star Ratings
+  console.log('list length = ',list.children.length);
+  /*for (let i = 0; i <= list.children.length; i++) {
+    list.children[i].remove();
+    console.log('remove child');
+  }*/
+  while (list.children.length > 0){
+    list.lastElementChild.remove();
+  }
+
+  if(totalStars){
+      message = message + " and " + totalStars + " Stars";
+
+
+
+      stars.forEach(function(star) {
+        let classes = star.classList;
+        let listItem = document.createElement('li');
+        let mStar = document.createElement('i');
+        for (let i = 0; i<classes.length; i++) {
+          mStar.classList.add(classes[i]);
+        }
+
+        //mStar.setAttribute('style', starStyle);
+        listItem.appendChild(mStar);
+
+      //  listItem.setAttribute('style', listStyle);
+        list.appendChild(listItem);
+      });
+
+
+  }
+
+//Update message
+  message = message+"!";
+  modalMessage.textContent = message;
+
+//display modal
+  modal.style.display = "flex";
 
 }
 
