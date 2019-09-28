@@ -18,6 +18,7 @@ let testMode = false;
  let timer = new Timer();
  let scorer = new StarRatings();
  let totalStars = 3;
+ let mode = 'easy';
 
 
 
@@ -59,7 +60,7 @@ let testMode = false;
 function clickResponseAction() {
   if(event.target.classList.contains("card")) {
     timer.start();
-    scorer.start();
+    scorer.start(mode);
     showCardAction(event.target);
 
     if(openCards.isFull()) {
@@ -299,34 +300,46 @@ function StarRatings() {
 
   let starsArray = Array.from(stars);
   let intervalId = 0;
-  let timeThreshold = 15;
-  let movesThreshold = 16;
+  let timeThreshold = 5;
+  let movesThreshold = 6;
+  let errorThreshold = 4;
 
 
-  let update = function() {
+  let updateEasyMode = function() {
+
     //Do if totalStars != 0
     if(totalStars) {
       log("thres: ",timeThreshold," | time: ",timeInSeconds);
-      //TODO: Fix Logic - First condition is never met
-      if(moveCounter > movesThreshold || timeInSeconds > timeThreshold) {
-        let star = starsArray[starsArray.length-1];
 
-        if (star.classList.contains('fa-star')) {
-          star.classList.remove('fa-star');
-          star.classList.add('fa-star-half');
+      let matchedCards = deck.querySelectorAll('.match');
+      let correctMoves = matchedCards.length > 0 ? matchedCards.length/2 : 0;
+      //let errorMoves = movesCounter >= correctMoves ? (movesCounter - correctMoves) : (movesCounter - correctMoves)*-1);
+      let errorMoves = Math.abs(moveCounter - correctMoves);
+      console.log("# of Moves: ",moveCounter,"  errors made: ",errorMoves,"  error threshold: ",errorThreshold);
+      //Dock points for errors made every 5 sec interval
+    //  if(timeInSeconds > timeThreshold) {
+        if( errorMoves > errorThreshold) {
+          //dock a point
+          let star = starsArray[starsArray.length-1];
+
+          if (star.classList.contains('fa-star')) {
+            star.classList.remove('fa-star');
+            star.classList.add('fa-star-half');
+          }
+          else{
+            star.classList.remove('fa-star-half');
+            starsArray.pop();
+          }
+
+          //decrement the total remaining stars counter by .5
+          totalStars = totalStars - .5;
+
+          //new threshold is the intial possible moves - current possible moves
+          errorThreshold += 2;
+
+
+
         }
-        else{
-          star.classList.remove('fa-star-half');
-          starsArray.pop();
-        }
-
-        //decrement the total remaining stars counter by .5
-        totalStars = totalStars - .5;
-
-        //set new thresholds
-        timeThreshold += 15;
-        movesThreshold += 4;
-        log("moves threshold: "+movesThreshold+" | time threshold: "+timeThreshold);
 
       }
       else {
@@ -334,13 +347,39 @@ function StarRatings() {
         stop();
       }
 
+  };
+
+  let updateDifficultMode = function() {
+
+    // TODO: decrement stars based on time and number of error moves
+
+    /*
+    if(totalStars) {
+      log("thres: ",timeThreshold," | time: ",timeInSeconds);
+
+
     }
+    else {
+      //Stop executing update since there are no stars left
+      stop();
+    }
+    */
+
   };
 
 
-  this.start = function() {
+  this.start = function(mode) {
     if(!intervalId) {
-      intervalId = setInterval(update, 15000);
+      switch (mode){
+        case 'difficult':
+            intervalId = setInterval(updateDifficultMode, 1000);
+          break;
+
+        default:
+          intervalId = setInterval(updateEasyMode, 1000);
+          break;
+
+      }
     }
   };
 
@@ -348,6 +387,9 @@ function StarRatings() {
     if(intervalId) {
       clearInterval(intervalId);
       intervalId = 0;
+      timeThreshold = 5;
+      movesThreshold = 6;
+      errorThreshold = 4;
     }
   };
 
