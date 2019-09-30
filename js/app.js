@@ -1,21 +1,25 @@
 // TODO: Check for page load???
-//document.addEventListener('DOMContentLoaded', function () {
-let testMode = false;
-/*
- * Create a list that holds all of your cards
- */
+//document.addEventListener('DOMContentLoaded', function () {}
+ const TEST_MODE = false;
+ const TEST_LEVEL = 1;
+
+
  const allCards = document.querySelectorAll('.card');
  const deck = document.querySelector('.deck');
  const moveTracker = document.querySelector('.moves');
  const reloader = document.querySelector('.restart');
  const stars = this.stars = document.querySelectorAll('.fa-star');
  const modal = document.querySelector('.modal');
- const openCardLimit = 2;
- const totalCards = 16;
+ const TOTAL_CARDS = 16;
+ const CARD_CLOSE_STATE = 'card';
+ const CARD_MATCH_STATE = 'match';
+ const CARD_OPEN_STATE = 'open';
+ const CARD_SHOW_STATE = 'show';
 
  let totalMatchedCards = 0;
  let moveCounter = 0;
- let timeInSeconds = 0;
+ //let timeInSeconds = 0; //use when difficult mode implemented
+ let openCards = new CardHolder(2);
  let timer = new Timer();
  let scorer = new StarRatings();
  let totalStars = 3;
@@ -47,10 +51,7 @@ let testMode = false;
   if (event.target == modal) {
     resetGame();
   }
-}
-
-
-
+};
 
 
 
@@ -67,21 +68,21 @@ let testMode = false;
   * Else the 'hideCardAction' function is called
   */
 function clickResponseAction() {
-  if(event.target.classList.contains("card")) {
+  if(event.target.classList.contains(CARD_CLOSE_STATE)) {
     timer.start();
     scorer.start(mode);
     showCardAction(event.target);
 
     if(openCards.isFull()) {
       updateMoveCounter();
-      if(isMatchPair()) {
+      if(openCards.isMatch()) {
         displayCardMatchAction();
-        if(totalMatchedCards == totalCards) {
+        if(totalMatchedCards == TOTAL_CARDS) {
           timer.stop();
           scorer.stop();
           displayWinnerScore();
        }
-     }//debug: can still turn over a 3rd card during time interval
+      }//debug: can still turn over a 3rd card during time interval
       else {   hideCardAction();   }
     }
   }
@@ -101,12 +102,12 @@ function clickResponseAction() {
  *      openCards array is full
  */
 function showCardAction(cardElement) {
-  if(!cardElement.classList.contains("open") &&
-     !cardElement.classList.contains("match")) {
+  if(!cardElement.classList.contains(CARD_OPEN_STATE) &&
+     !cardElement.classList.contains(CARD_MATCH_STATE)) {
 
-    if(openCards.pushToLimit(cardElement)) {
-      log('Open cards: '+openCards.length);
-      cardElement.classList.add("open","show");
+    if(openCards.pushCard(cardElement)) {
+      log('Open cards: '+openCards.length(),1);
+      cardElement.classList.add(CARD_OPEN_STATE,CARD_SHOW_STATE);
     }
   }
 }
@@ -115,10 +116,10 @@ function showCardAction(cardElement) {
  * Hide Card Action
  *      - Hides the card symbol and changes the card color
  *
- * Calls the resetOpenCards funtion after 1 second to hide the cards.
+ * Calls the Card Holder reset method after 1 second to hide the cards.
  */
 function hideCardAction() {
-    console.log("hideCardAction: num cards = ",openCards.length);
+    log("hideCardAction: num cards = "+openCards.length(),1);
     setTimeout(resetOpenCards, 1000);
 
 }
@@ -131,17 +132,20 @@ function hideCardAction() {
  * The function loops through openCards, removes 'open' and 'show' classes'
  * and adds 'match' class to each card element in openCards array.
  */
-function displayCardMatchAction() {
-  openCards.forEach(function(card) {
-    card.classList.remove('open','show');
-    card.classList.add('match');
-  });
+ function displayCardMatchAction() {
+   let cardArray = openCards.getCards();
 
-  totalMatchedCards += openCards.length;
-  log("totalMatchedCards = "+totalMatchedCards);
-  // TODO: Add animation
-  openCards = [];
-}
+   cardArray.forEach(function(card) {
+     card.classList.remove(CARD_OPEN_STATE,CARD_SHOW_STATE);
+     card.classList.add(CARD_MATCH_STATE);
+   });
+
+   totalMatchedCards += openCards.length();
+   log("totalMatchedCards = "+totalMatchedCards,1);
+   // TODO: Add animation
+   // TODO: Add animation
+   openCards.removeAllCards();
+ }
 
 
 function resetGame(cards){
@@ -155,15 +159,15 @@ function resetGame(cards){
 
   //Reset Deck
   allCards.forEach(function(card) {
-    card.className = "card";
+    card.className = CARD_CLOSE_STATE;
   });
 
   shuffleDeck();
   totalMatchedCards = 0;
-  openCards = [];
+  resetOpenCards();// = [];
 
   //Hide modal
-  modal.style.display = "none";
+  modal.style.display = 'none';
 
 }
 
@@ -180,7 +184,7 @@ function resetGame(cards){
  function shuffleDeck() {
    let cardSymbols = deck.querySelectorAll('i');
    cardSymbols = shuffle(cardSymbols);
-   log(cardSymbols);
+   log(cardSymbols,0);
 
  }
 
@@ -188,34 +192,78 @@ function resetGame(cards){
 
 ///////////////////////////////////
 // Active Card(s) Functionality
-//
-// TODO: Encapsulate in CardHolder Object
 ///////////////////////////////////
-
 /*
- * The 'isMatchPair' method returns TRUE when two cards have the
- * same symbol - a match!
+ * Creates a CardHolder object
+ * @class
  */
-function isMatchPair() {
-  const firstCardSymbol = openCards[0].firstElementChild.className;
-  const secondCardSymbol = openCards[1].firstElementChild.className;
-  log(firstCardSymbol+"?"+secondCardSymbol);
-  return firstCardSymbol === secondCardSymbol;
+function CardHolder(cardLimit){
+  this.cardLimit = cardLimit;
+  this.matchFound = false;
+  this.array = [];
+
+
+  /*
+  * Method "pushToLimit" enforces given parameter as array size constraint
+  * This method will push objects onto the array and return TRUE
+  * until the predefined limit of 2 is reach. At which point the method will NOT
+  * add the object to the array and will return FALSE.
+  *
+  * @param {object} - card element
+  * @returns {boolean}
+  */
+  this.pushCard = function(value){
+
+    if (this.array.length >= this.cardLimit) {
+      console.log('CardHolder Limit reached: length= ', this.array.length);
+      return false;
+    }
+
+    return this.array.push(value);
+  };
+
+
+  /*
+   * The 'isMatch' method returns TRUE when two cards have the
+   * same symbol - a match!
+   * @returns {boolean}
+   */
+  this.isMatch = function() {
+
+       if(this.isFull()){
+         const firstCardSymbol = this.array[0].firstElementChild.className;
+         const secondCardSymbol = this.array[1].firstElementChild.className;
+
+         this.matchFound = (firstCardSymbol === secondCardSymbol);
+         log("CardHolder.isMatch:"+ firstCardSymbol+"=="+secondCardSymbol+" : "+this.matchFound,1);
+       }
+       return this.matchFound;
+     };
+
+
+  this.removeAllCards = function() {  this.array = [];  };
+
+  this.getCards = function() {  return this.array;  };
+
+  this.isFull = function() {  return this.array.length == this.cardLimit; };
+
+  this.length = function() {  return this.array.length; };
 
 }
 
 /*
- * Resets the open cards by restoring their original 'hidden' state
+ * Loops through openCards and removes 'open' and 'show' classes
  * Reassigns openCards to empty array.
  */
 function resetOpenCards() {
-  openCards.forEach(function(card) {
+  let cardArray = openCards.getCards();
+  cardArray.forEach(function(card) {
     card.className = "card";
   });
 
-  openCards = [];
+  //KS openCards = [];
+  openCards.removeAllCards();
 }
-
 
 
 
@@ -240,20 +288,15 @@ function displayWinnerScore() {
   //       and play again option
   console.log("Congratulations! You won!");
   console.log("with ", moveCounter, " Moves and ", totalStars, " Stars!");
-  const modalMessage = document.querySelector(".message");
+  const modalMessage = document.querySelector('.message');
   const modalBody = document.querySelector('.modal-body');
-
-  let message = "You won with " + moveCounter + " Moves";
-//
-
   const list = modalBody.getElementsByClassName('stars')[0];
+  let message = "You won with " + moveCounter + " Moves";
   let currentStars = list.children;
+
+  log('list length = '+list.children.length,0);
+
   //In case of Reset, remove any previous Star Ratings
-  console.log('list length = ',list.children.length);
-  /*for (let i = 0; i <= list.children.length; i++) {
-    list.children[i].remove();
-    console.log('remove child');
-  }*/
   while (list.children.length > 0){
     list.lastElementChild.remove();
   }
@@ -261,32 +304,28 @@ function displayWinnerScore() {
   if(totalStars){
       message = message + " and " + totalStars + " Stars";
 
-
-
+      //Add each star from the Star Ratings to the modal
       stars.forEach(function(star) {
         let classes = star.classList;
         let listItem = document.createElement('li');
         let mStar = document.createElement('i');
+
         for (let i = 0; i<classes.length; i++) {
           mStar.classList.add(classes[i]);
         }
 
-        //mStar.setAttribute('style', starStyle);
-        listItem.appendChild(mStar);
+        listItem.appendChild(mStar); //star
+        list.appendChild(listItem); //list of stars
 
-      //  listItem.setAttribute('style', listStyle);
-        list.appendChild(listItem);
       });
-
-
   }
 
-//Update message
+  //Update message
   message = message+"!";
   modalMessage.textContent = message;
 
-//display modal
-  modal.style.display = "flex";
+  //display modal
+  modal.style.display = 'flex';
 
 }
 
@@ -294,42 +333,55 @@ function displayWinnerScore() {
 ///////////////////////////////////
 // Timer Functionality
 ///////////////////////////////////
-// TODO: Consider reset game after 5 min lapse/count-down timer instead
+/*
+ *Creates a Timer object
+ * @class
+ */
 function Timer() {
-  //this.timeDisplay = 0;
   let intervalId = 0;
-  let hours = minutes= seconds = 0;
-  let totalSecs = totalMins = 60;
+  let hours = 0;
+  let minutes = 0;
+  let seconds = 0;
+  let MAX_SECONDS = 60;
+  let MAX_MINUTES = 60;
 
-
+  /*
+   * The Timer 'padTime' method adds leading zero
+   * to numbers less than 10
+   */
   let padTime = function(i) {
-    //log(i);
     return ('00'+i).substr(-2);
   };
+
 
   let displayTime = function(h,m,s) {
     h = padTime(h);
     m = padTime(m);
     s = padTime(s);
     document.getElementById('time').innerHTML =  h + ":" + m + ":" + s;
-    log("after pad: "+h+ ":"+ m+ ":"+ s);
+    log("after pad: "+h+ ":"+ m+ ":"+ s,0);
   };
 
+
+  /*
+   * The Timer 'update' method increments the timer's
+   * hours, minutes, and seconds
+   */
   let update = function() {
 
-    if(seconds == totalSecs-1) {
+    if(seconds == MAX_SECONDS-1) {
       seconds = 0;
       minutes++;
     }
     else{  seconds++;  }
 
-    if(minutes == totalMins-1) {
+    if(minutes == MAX_MINUTES-1) {
       minutes=0;
       hours++;
     }
 
     displayTime(hours,minutes,seconds);
-    timeInSeconds++;
+    //timeInSeconds++;
   };
 
 
@@ -357,30 +409,34 @@ function Timer() {
 ///////////////////////////////////
 // Star Ratings
 ///////////////////////////////////
+
+/*
+ *Creates a StarRatings object
+ * @class
+ */
 function StarRatings() {
 
   let starsArray = Array.from(stars);
   let intervalId = 0;
-  let timeThreshold = 5;
-  let movesThreshold = 6;
-  let errorThreshold = 4;
+  let errorThreshold = 4;   //the number of errors possible before losing a point
 
 
-  let updateEasyMode = function() {
+  /*
+   * The StarRatings 'update' method decrements half a point
+   * for moves that result in a mismatch depending on the
+   * error threshold. The threshold is increase by 2 after it is reached.
+   */
+  let update = function() {
 
     //Do if totalStars != 0
     if(totalStars) {
-      log("thres: ",timeThreshold," | time: ",timeInSeconds);
-
       let matchedCards = deck.querySelectorAll('.match');
       let correctMoves = matchedCards.length > 0 ? matchedCards.length/2 : 0;
-      //let errorMoves = movesCounter >= correctMoves ? (movesCounter - correctMoves) : (movesCounter - correctMoves)*-1);
       let errorMoves = Math.abs(moveCounter - correctMoves);
-      console.log("# of Moves: ",moveCounter,"  errors made: ",errorMoves,"  error threshold: ",errorThreshold);
-      //Dock points for errors made every 5 sec interval
-    //  if(timeInSeconds > timeThreshold) {
+      log("# of Moves: "+moveCounter+"  errors made: "+errorMoves+"  error threshold: "+errorThreshold,0);
+
         if( errorMoves > errorThreshold) {
-          //dock a point
+          //dock half a point
           let star = starsArray[starsArray.length-1];
 
           if (star.classList.contains('fa-star')) {
@@ -395,11 +451,8 @@ function StarRatings() {
           //decrement the total remaining stars counter by .5
           totalStars = totalStars - .5;
 
-          //new threshold is the intial possible moves - current possible moves
+          //increase error threshold
           errorThreshold += 2;
-
-
-
         }
 
       }
@@ -411,24 +464,13 @@ function StarRatings() {
   };
 
   let updateDifficultMode = function() {
-
     // TODO: decrement stars based on time and number of error moves
-
-    /*
-    if(totalStars) {
-      log("thres: ",timeThreshold," | time: ",timeInSeconds);
-
-
-    }
-    else {
-      //Stop executing update since there are no stars left
-      stop();
-    }
-    */
-
   };
 
-
+  /*
+   * The StarRatings 'start' method sets mode and the time interval for updating
+   * the star ratings. Currently only default mode is coded.
+   */
   this.start = function(mode) {
     if(!intervalId) {
       switch (mode){
@@ -437,7 +479,7 @@ function StarRatings() {
           break;
 
         default:
-          intervalId = setInterval(updateEasyMode, 1000);
+          intervalId = setInterval(update, 1000);
           break;
 
       }
@@ -448,9 +490,7 @@ function StarRatings() {
     if(intervalId) {
       clearInterval(intervalId);
       intervalId = 0;
-      timeThreshold = 5;
-      movesThreshold = 6;
-      errorThreshold = 4;
+
     }
   };
 
@@ -458,17 +498,13 @@ function StarRatings() {
     stop();
 
     //Display all stars in score panel
-    //let allStars = stars;
     stars.forEach(function(star) {
       star.className = 'fa fa-star';
     });
 
     //reset counters
     totalStars = 3;
-    timeInSeconds = 0;
-
-    timeThreshold = 15;
-    movesThreshold = 16;
+    errorThreshold = 4;
     starsArray = Array.from(stars);
   };
 
@@ -480,7 +516,7 @@ function StarRatings() {
  ///////////////////////////////////
 
 
-//TODO: Encapsulate in CardHolder Object
+//Replaced with CardHolder Object
  /*
  * Add method "pushToLimit" to built-in Array Object to enforce size constraint
  * This method will push objects onto the array and return TRUE
@@ -493,7 +529,7 @@ function StarRatings() {
  * in this instance, is minor since is it a small project maintained by a
  * single developer.
  */
- Object.defineProperties(Array.prototype, {
+/* Object.defineProperties(Array.prototype, {
    pushToLimit: {
        value: function (value) {
          if (this.length >= 2) {
@@ -509,7 +545,7 @@ function StarRatings() {
    }
  }
  });
-
+*/
 
 
  /*
@@ -522,7 +558,7 @@ function StarRatings() {
   // Shuffle function from http://stackoverflow.com/a/2450976. Modified to traverse
   //nodelist instead of array. Is less costly though tightly coupled now.
   function shuffle(nodeList) {
-      var currentIndex = nodeList.length, temporaryValue, randomIndex;// TODO: change to let
+      let currentIndex = nodeList.length, temporaryValue, randomIndex;
 
       while (currentIndex !== 0) {
           randomIndex = Math.floor(Math.random() * currentIndex);
@@ -535,9 +571,11 @@ function StarRatings() {
       return nodeList;
   }
 
-
-function log(message) {
-  if(testMode)
+/*
+ * Temporary Logger - Prints param to console if TEST_MODE set to true
+ * @param {string} message - string to be printed to console
+ */
+function log(message, level) {
+  if(TEST_MODE && level == TEST_LEVEL)
     console.debug(message);
 }
-//});
