@@ -1,6 +1,6 @@
 # Memory Game Project
 
-![alt text](../img/memorygame.png)
+![alt text](/img/memorygame.png)
 
 ### Table of Contents
 
