@@ -157,7 +157,6 @@ h1 {
 }
 
 .modal .modal-body {
-  padding: 2px 16px;
   text-align: center;
 }
 
@@ -179,7 +178,7 @@ h1 {
 }
 
 .modal .modal-footer {
-  margin-top: 15px;
+  margin-top: 10px;
   border-top: 2px solid #eceaea;
   padding: 10px 16px;
   text-align: center;

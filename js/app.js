@@ -323,6 +323,8 @@ function displayWinnerScore() {
   //Update message
   message = message+"!";
   modalMessage.textContent = message;
+  modalMessage.insertAdjacentHTML('beforeend','<br> Your Time: '+
+                  document.querySelector('#time').textContent);
 
   //display modal
   modal.style.display = 'flex';
@@ -429,7 +431,7 @@ function StarRatings() {
   let update = function() {
 
     //Do if totalStars != 0
-    if(totalStars) {
+    if(totalStars > 1) {
       let matchedCards = deck.querySelectorAll('.match');
       let correctMoves = matchedCards.length > 0 ? matchedCards.length/2 : 0;
       let errorMoves = Math.abs(moveCounter - correctMoves);
